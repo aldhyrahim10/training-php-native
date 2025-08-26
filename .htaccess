@@ -1,0 +1,13 @@
+# Aktifkan mod_rewrite
+RewriteEngine On
+
+# Sesuaikan base path dengan nama folder project kamu
+RewriteBase /cars-rent/
+
+# Jika file/folder asli ada → biarkan apache yg handle
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Tangkap pola URL: /page/action/id
+# contoh: /car-category/show/5 → index.php?page=car-category&action=show&id=5
+RewriteRule ^([^/]+)/?([^/]+)?/?([^/]+)?$ index.php?page=$1&action=$2&id=$3 [QSA,L]
