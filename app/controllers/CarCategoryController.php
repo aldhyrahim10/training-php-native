@@ -1,26 +1,17 @@
 <?php
 
-require_once __DIR__ . "/../config/database.php";
+require_once __DIR__ . "/../models/CarCategory.php";
 
 class CarCategoryController {
     
-    private $conn;
+    private $categoryModel;
 
     public function __construct($db) {
-        $this->conn = $db;
+        $this->categoryModel = new CarCategory($db);
     }
 
     public function index() {
-        $sql = "
-              SELECT * FROM car_categories
-        ";
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-
-
-        $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+        $categories = $this->categoryModel->all();
         $title = "List Car Category";
         $view  = "car-category";
         include __DIR__ . '/../../resources/layouts/main.php';
@@ -30,16 +21,13 @@ class CarCategoryController {
         $categoryName = $_POST['category_name'] ?? null;
 
         if ($categoryName) {
-            $stmt = $this->conn->prepare("INSERT INTO car_categories (category_name) VALUES (:name)");
-            $stmt->bindParam(':name', $categoryName);
-            $stmt->execute();
+            $id = $this->categoryModel->create($categoryName);
 
-            // return JSON ke AJAX
             echo json_encode([
                 "status" => "success",
                 "message" => "Kategori berhasil ditambahkan",
                 "data" => [
-                    "id" => $this->conn->lastInsertId(),
+                    "id" => $id,
                     "category_name" => $categoryName
                 ]
             ]);
@@ -59,11 +47,7 @@ class CarCategoryController {
             return;
         }
 
-        $sql = "SELECT * FROM car_categories WHERE id = :id LIMIT 1";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->execute();
-        $category = $stmt->fetch(PDO::FETCH_ASSOC);
+        $category = $this->categoryModel->find($id);
 
         if ($category) {
             echo json_encode(["status" => "success", "data" => $category]);
@@ -71,7 +55,6 @@ class CarCategoryController {
             echo json_encode(["status" => "error", "message" => "Data tidak ditemukan"]);
         }
     }
-
 
     public function update() {
         $id = $_POST['hdnCategoryID'] ?? null;
@@ -82,14 +65,9 @@ class CarCategoryController {
             return;
         }
 
-        $stmt = $this->conn->prepare("UPDATE car_categories SET category_name = :name WHERE id = :id");
-        $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':id', $id);
-        $stmt->execute();
-
+        $this->categoryModel->update($id, $name);
         echo json_encode(["status" => "success", "message" => "Kategori berhasil diupdate"]);
     }
-
 
     public function delete($id) {
         if (!$id) {
@@ -97,14 +75,10 @@ class CarCategoryController {
             return;
         }
 
-        $stmt = $this->conn->prepare("DELETE FROM car_categories WHERE id = ?");
-        $result = $stmt->execute([$id]);
-
-        if ($result) {
+        if ($this->categoryModel->delete($id)) {
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Delete failed']);
         }
     }
-
 }
